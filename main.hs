@@ -1,5 +1,7 @@
 import System.Environment
 import System.IO
+import Text.Regex
+import Data.Maybe
 import Control.Monad
 
 data RAM = RAMMacro Int String | RAMValue Int Int deriving Show
@@ -9,9 +11,10 @@ data Instruction = Instr0Op { instr :: String } |
                    Instr2Op { instr :: String, op1 :: String, op2 :: String }
                    deriving Show
 
-instr0Op = ["NOP", "HLT", ".*"]
-instr1Op = ["GOTO", "JMPZ", "JMPNZ", "NOT", "NEG", "DB"]
-instr2Op = ["LOAD", "STORE", "MOV", "AND", "OR", "XOR", "ADD", "SUB", "MUL"]
+instr0Op = map mkRegex ["NOP", "HLT", ".*"]
+instr1Op = map mkRegex ["GOTO", "JMPZ", "JMPNZ", "NOT", "NEG", "DB"]
+instr2Op = map mkRegex ["LOAD", "STORE", "MOV", "AND", "OR", "XOR", "ADD",
+                        "SUB", "MUL"]
 
 main = do
         args <- getArgs
@@ -31,6 +34,16 @@ transform inFile outFile = do
         outHandle <- openFile outFile WriteMode
         mapM_ (hPutStrLn outHandle) (words contents)
         hClose outHandle
+
+isInstr0Op word = null $ filter isJust $ map (\exp -> matchRegex exp word) instr0Op
+isInstr1Op word = null $ filter isJust $ map (\exp -> matchRegex exp word) instr1Op
+isInstr2Op word = null $ filter isJust $ map (\exp -> matchRegex exp word) instr2Op
+
+
+getInstructions instructions [] = instructions
+getInstructions instructions words = 
+        getInstructions instructions (tail words)
+        
 
 ramToString (RAMMacro addr val) = "ram[" ++ (show addr) ++ "]=" ++ val ++ ";"
 ramToString (RAMValue addr val) = "ram[" ++ (show addr) ++ "]=" ++
