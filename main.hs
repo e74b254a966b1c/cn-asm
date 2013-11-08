@@ -82,11 +82,13 @@ validateInstr Instr2Op {instr = x,
         | x == "LOAD" = if isReg o1Uppr
                             then Validated Instr2Op {instr = x,
                                                      op1 = o1Uppr,
-                                                     op2 = transformToImm o2}
+                                                     op2 = 
+                                                         transformToImm o2Uppr}
                             else error "Invalid instruction"
         | x == "STORE" = if isReg o2Uppr
                             then Validated Instr2Op {instr = x,
-                                                     op1 = transformToImm o1,
+                                                     op1 = 
+                                                         transformToImm o1Uppr,
                                                      op2 = o2Uppr}
                             else error "Invalid instruction"
         | otherwise = if isReg o1Uppr && isReg o2Uppr
