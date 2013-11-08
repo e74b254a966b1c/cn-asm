@@ -15,6 +15,8 @@ data Instruction = Instr0Op { instr :: String } |
 
 newtype ValidatedInstr = Validated Instruction
 
+data ValidatedInstrWithAddr = InstrAddr {vInstr :: ValidatedInstr, addr :: Int}
+
 instr0Op = map mkRegex ["NOP", "HLT", ".*"]
 instr1Op = map mkRegex ["GOTO", "JMPZ", "JMPNZ", "NOT", "NEG", "DB"]
 instr2Op = map mkRegex ["LOAD", "STORE", "MOV", "AND", "OR", "XOR", "ADD",
@@ -46,9 +48,20 @@ isInstr2Op word = null $ filter isJust $ map (\exp -> matchRegex exp word) instr
 isReg word = null $ filter isJust $ map (\exp -> matchRegex exp word) regs
 isLabel word = isJust $ matchRegex (mkRegex ".*") word
 
-transformToAddr word
+transformToImm word
         | isLabel word = word
         | otherwise = show (read word::Word8)
+
+putAddrToInstr [] _ instrOut = instrOut
+putAddrToInstr (ins : instrIn) startAddr instrOut =
+    putAddrToInstr instrIn (startAddr + numberOfBytes ins)
+         (InstrAddr {vInstr = ins, addr = startAddr} : instrOut)
+
+numberOfBytes (Validated (Instr0Op x))
+        | isLabel x = 0
+        | otherwise = 1
+numberOfBytes (Validated (Instr1Op _ _)) = 2
+numberOfBytes (Validated (Instr2Op _ _ _)) = 3
 
 getValidatedInstructions words = reverse $ map validateInstr 
                                                 (getInstructions [] words)
@@ -59,12 +72,8 @@ validateInstr Instr1Op {instr = x,
                                         then Validated Instr1Op {instr = x,
                                                                  op1 = oUppr}
                                         else error "Invalid instruction"
-        | x == "DB" = if isLabel oUppr
-                        then Validated Instr1Op {instr = x, 
-                                                 op1 = oUppr}
-                        else error "Invalid instruction"
         | otherwise = Validated Instr1Op {instr = x,
-                                          op1 = transformToAddr oUppr}
+                                          op1 = transformToImm oUppr}
         where oUppr = toUpperString o1
 
 validateInstr Instr2Op {instr = x,
@@ -73,11 +82,11 @@ validateInstr Instr2Op {instr = x,
         | x == "LOAD" = if isReg o1Uppr
                             then Validated Instr2Op {instr = x,
                                                      op1 = o1Uppr,
-                                                     op2 = transformToAddr o2}
+                                                     op2 = transformToImm o2}
                             else error "Invalid instruction"
         | x == "STORE" = if isReg o2Uppr
                             then Validated Instr2Op {instr = x,
-                                                     op1 = transformToAddr o1,
+                                                     op1 = transformToImm o1,
                                                      op2 = o2Uppr}
                             else error "Invalid instruction"
         | otherwise = if isReg o1Uppr && isReg o2Uppr
