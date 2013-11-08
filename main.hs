@@ -50,7 +50,8 @@ transformToAddr word
         | isLabel word = word
         | otherwise = show (read word::Word8)
 
-getValidatedInstructions words = map validateInstr (getInstructions [] words)
+getValidatedInstructions words = reverse $ map validateInstr 
+                                                (getInstructions [] words)
 validateInstr Instr0Op {instr = x} = Validated Instr0Op {instr = x}
 validateInstr Instr1Op {instr = x,
                         op1 = o1}
@@ -77,6 +78,11 @@ validateInstr Instr2Op {instr = x,
         | x == "STORE" = if isReg o2Uppr
                             then Validated Instr2Op {instr = x,
                                                      op1 = transformToAddr o1,
+                                                     op2 = o2Uppr}
+                            else error "Invalid instruction"
+        | otherwise = if isReg o1Uppr && isReg o2Uppr
+                            then Validated Instr2Op {instr = x,
+                                                     op1 = o1Uppr,
                                                      op2 = o2Uppr}
                             else error "Invalid instruction"
         where o1Uppr = toUpperString o1 
