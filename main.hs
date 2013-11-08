@@ -3,6 +3,7 @@ import System.IO
 import Text.Regex
 import Data.Maybe
 import Control.Monad
+import Data.Char (toUpper)
 
 data RAM = RAMMacro Int String | RAMValue Int Int deriving Show
 
@@ -41,9 +42,27 @@ isInstr2Op word = null $ filter isJust $ map (\exp -> matchRegex exp word) instr
 
 
 getInstructions instructions [] = instructions
-getInstructions instructions words = 
-        getInstructions instructions (tail words)
-        
+getInstructions instructions (word : words)
+        | isInstr0Op wordUpr = getInstructions 
+                                (Instr0Op {instr = wordUpr}
+                                 : instructions) 
+                                words
+    where wordUpr = map toUpper word
+getInstructions instructions (word1 : word2 : words)
+        | isInstr1Op wordUpr = getInstructions 
+                                (Instr1Op {instr = wordUpr,
+                                           op1   = word2}
+                                 : instructions) 
+                                words
+    where wordUpr = map toUpper word1
+getInstructions instructions (word1 : word2 : word3 : words)
+        | isInstr2Op wordUpr = getInstructions 
+                                (Instr2Op {instr = wordUpr,
+                                           op1 = word2,
+                                           op2 = word3}
+                                 : instructions) 
+                                words
+    where wordUpr = map toUpper word1
 
 ramToString (RAMMacro addr val) = "ram[" ++ (show addr) ++ "]=" ++ val ++ ";"
 ramToString (RAMValue addr val) = "ram[" ++ (show addr) ++ "]=" ++
