@@ -18,7 +18,7 @@ newtype Validated = Validated Instruction
 
 data InstrAddr = InstrAddr {vInstr :: Validated, addr :: Int}
 
-instr0Op = map mkRegex ["NOP", "HLT", ".*"]
+instr0Op = map mkRegex ["NOP", "HLT", "\\..*"]
 instr1Op = map mkRegex ["GOTO", "JMPZ", "JMPNZ", "NOT", "NEG", "DB"]
 instr2Op = map mkRegex ["LOAD", "STORE", "MOV", "AND", "OR", "XOR", "ADD",
                         "SUB", "MUL"]
