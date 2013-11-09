@@ -2,6 +2,7 @@ import System.Environment
 import System.IO
 import Text.Regex
 import Data.Maybe
+import Data.List
 import Control.Monad
 import Data.Word (Word8)
 import Data.Char (toUpper)
@@ -42,9 +43,9 @@ transform inFile outFile = do
         mapM_ (hPutStrLn outHandle) (getCode (words contents))
         hClose outHandle
 
-isInstr0Op word = null $ filter isJust $ map (\exp -> matchRegex exp word) instr0Op
-isInstr1Op word = null $ filter isJust $ map (\exp -> matchRegex exp word) instr1Op
-isInstr2Op word = null $ filter isJust $ map (\exp -> matchRegex exp word) instr2Op
+isInstr0Op word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word) instr0Op
+isInstr1Op word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word) instr1Op
+isInstr2Op word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word) instr2Op
 isReg word = null $ filter isJust $ map (\exp -> matchRegex exp word) regs
 isLabel word = isJust $ matchRegex (mkRegex ".*") word
 
