@@ -47,7 +47,7 @@ isInstr0Op word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word)
 isInstr1Op word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word) instr1Op
 isInstr2Op word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word) instr2Op
 isReg word = null $ filter isJust $ map (\exp -> matchRegex exp word) regs
-isLabel word = isJust $ matchRegex (mkRegex ".*") word
+isLabel word = isJust $ matchRegex (mkRegex "\\..*") word
 
 transformToImm word
         | isLabel word = word
@@ -111,7 +111,8 @@ validateInstr Instr1Op {instr = x,
         | x == "NOT" || x == "NEG" = if isReg oUppr
                                         then Validated Instr1Op {instr = x,
                                                                  op1 = oUppr}
-                                        else error "Invalid instruction"
+                                        else error $ "Invalid 1OP instruction\n" ++
+                                                     "Expecting register"
         | otherwise = Validated Instr1Op {instr = x,
                                           op1 = transformToImm oUppr}
         where oUppr = toUpperString o1
