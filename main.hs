@@ -46,7 +46,7 @@ transform inFile outFile = do
 isInstr0Op word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word) instr0Op
 isInstr1Op word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word) instr1Op
 isInstr2Op word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word) instr2Op
-isReg word = null $ filter isJust $ map (\exp -> matchRegex exp word) regs
+isReg word = not $ null $ filter isJust $ map (\exp -> matchRegex exp word) regs
 isLabel word = isJust $ matchRegex (mkRegex "\\..*") word
 
 transformToImm word
