@@ -52,6 +52,10 @@ transformToImm word
         | isLabel word = word
         | otherwise = show (read word::Word8)
 
+getAddressedInstr words = putAddrToInstr (getValidatedInstructions words)
+                                         0
+                                         []
+
 putAddrToInstr [] _ instrOut = instrOut
 putAddrToInstr (ins : instrIn) startAddr instrOut =
     putAddrToInstr instrIn (startAddr + numberOfBytes ins)
@@ -63,8 +67,8 @@ numberOfBytes (Validated (Instr0Op x))
 numberOfBytes (Validated (Instr1Op _ _)) = 2
 numberOfBytes (Validated (Instr2Op _ _ _)) = 3
 
-getValidatedInstructions words = reverse $ map validateInstr 
-                                                (getInstructions [] words)
+getValidatedInstructions words = reverse $ map validateInstr
+                                               (getInstructions [] words)
 validateInstr Instr0Op {instr = x} = Validated Instr0Op {instr = x}
 validateInstr Instr1Op {instr = x,
                         op1 = o1}
