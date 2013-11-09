@@ -186,19 +186,4 @@ ramToString (RAMMacro addr val) = "ram[" ++ (show addr) ++ "]=`" ++ val ++ ";\n"
 ramToString (RAMValue addr val) = "ram[" ++ (show addr) ++ "]=" ++
                                    (show val)  ++ ";\n"
 
-{-
-main = do
-        args <- getArgs  
-        progName <- getProgName  
-        putStrLn "The arguments are:"  
-        mapM putStrLn args  
-        putStrLn "The program name is:"  
-        putStrLn progName  
-        let list = []
-        handle <- openFile "test.txt" ReadMode
-        contents <- hGetContents handle
-        let singlewords = words contents
-        print singlewords
-        hClose handle
--}
 
