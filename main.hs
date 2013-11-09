@@ -53,7 +53,7 @@ transformToImm word
         | isLabel word = word
         | otherwise = show (read word::Word8)
 
-getCode words = map ramToString $ concat $ 
+getCode words = map ramToString $ concat $ reverse $
                     map instrToRam (replaceLabels instr (getLabelAddrList instr))
         where instr = getAddressedInstr words
 
@@ -125,18 +125,21 @@ validateInstr Instr2Op {instr = x,
                                                      op1 = o1Uppr,
                                                      op2 = 
                                                          transformToImm o2Uppr}
-                            else error "Invalid instruction"
+                            else error $ "Invalid 2OP instruction\n" ++
+                                         "Expecting first argument to be REG"
         | x == "STORE" = if isReg o2Uppr
                             then Validated Instr2Op {instr = x,
                                                      op1 = 
                                                          transformToImm o1Uppr,
                                                      op2 = o2Uppr}
-                            else error "Invalid instruction"
+                            else error $ "Invalid 2OP instruction\n" ++
+                                        "Expecting second argument to be REG"
         | otherwise = if isReg o1Uppr && isReg o2Uppr
                             then Validated Instr2Op {instr = x,
                                                      op1 = o1Uppr,
                                                      op2 = o2Uppr}
-                            else error "Invalid instruction"
+                            else error $ "Invalid 2OP instruction\n" ++
+                                         "Expecting both arguments to be REGS"
         where o1Uppr = toUpperString o1 
               o2Uppr = toUpperString o2
 
