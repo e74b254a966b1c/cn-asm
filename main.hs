@@ -13,9 +13,9 @@ data Instruction = Instr0Op { instr :: String } |
                    Instr2Op { instr :: String, op1 :: String, op2 :: String }
                    deriving Show
 
-newtype ValidatedInstr = Validated Instruction
+newtype Validated = Validated Instruction
 
-data ValidatedInstrWithAddr = InstrAddr {vInstr :: ValidatedInstr, addr :: Int}
+data InstrAddr = InstrAddr {vInstr :: Validated, addr :: Int}
 
 instr0Op = map mkRegex ["NOP", "HLT", ".*"]
 instr1Op = map mkRegex ["GOTO", "JMPZ", "JMPNZ", "NOT", "NEG", "DB"]
@@ -51,6 +51,20 @@ isLabel word = isJust $ matchRegex (mkRegex ".*") word
 transformToImm word
         | isLabel word = word
         | otherwise = show (read word::Word8)
+
+replaceLabels instrAddr = filter (not . labelFilter) instrAddr
+
+getLabelAddrList instrAddr = map instrAddrPair (filter labelFilter instrAddr)
+
+labelFilter (InstrAddr (Validated (Instr0Op x)) _) = isLabel x
+labelFilter _ = False
+
+instrAddrPair x = (getInstr x, getAddr x)
+
+getAddr (InstrAddr _ x) = x
+getInstr (InstrAddr (Validated (Instr0Op x)) _) = x;
+getInstr (InstrAddr (Validated (Instr1Op x _)) _) = x;
+getInstr (InstrAddr (Validated (Instr2Op x _ _)) _) = x;
 
 getAddressedInstr words = putAddrToInstr (getValidatedInstructions words)
                                          0
