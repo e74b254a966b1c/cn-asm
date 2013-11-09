@@ -39,7 +39,7 @@ transform inFile outFile = do
         contents <- readFile inFile
 
         outHandle <- openFile outFile WriteMode
-        mapM_ (hPutStrLn outHandle) (words contents)
+        mapM_ (hPutStrLn outHandle) (getCode (words contents))
         hClose outHandle
 
 isInstr0Op word = null $ filter isJust $ map (\exp -> matchRegex exp word) instr0Op
@@ -52,14 +52,33 @@ transformToImm word
         | isLabel word = word
         | otherwise = show (read word::Word8)
 
-replaceLabels instrAddr = filter (not . labelFilter) instrAddr
+getCode words = map ramToString $ concat $ 
+                    map instrToRam (replaceLabels instr (getLabelAddrList instr))
+        where instr = getAddressedInstr words
+
+replaceLabels instrAddr (x : labels) = replaceLabels (map (replaceLabelWithAddr x)
+                                              (filter (not . labelFilter) instrAddr))
+                                                labels
+replaceLabels instrAddr [] = instrAddr
+
+replaceLabelWithAddr _ (InstrAddr (Validated (Instr0Op x)) a) =
+        InstrAddr (Validated (Instr0Op x)) a
+replaceLabelWithAddr (label, ad) (InstrAddr (Validated (Instr1Op x o1)) a) =
+    if label == o1 then InstrAddr (Validated (Instr1Op x ad)) a
+        else InstrAddr (Validated (Instr1Op x o1)) a
+replaceLabelWithAddr (label, ad) (InstrAddr (Validated (Instr2Op x o1 o2)) a)
+    | label == o1 = 
+                replaceLabelWithAddr (label, ad) (InstrAddr (Validated (Instr2Op x ad o2)) a)
+    | label == o2 = 
+                replaceLabelWithAddr (label, ad) (InstrAddr (Validated (Instr2Op x o1 ad)) a)
+    | otherwise = InstrAddr (Validated (Instr2Op x o1 o2)) a
 
 getLabelAddrList instrAddr = map instrAddrPair (filter labelFilter instrAddr)
 
 labelFilter (InstrAddr (Validated (Instr0Op x)) _) = isLabel x
 labelFilter _ = False
 
-instrAddrPair x = (getInstr x, getAddr x)
+instrAddrPair x = (getInstr x, show $ getAddr x)
 
 getAddr (InstrAddr _ x) = x
 getInstr (InstrAddr (Validated (Instr0Op x)) _) = x;
@@ -78,7 +97,9 @@ putAddrToInstr (ins : instrIn) startAddr instrOut =
 numberOfBytes (Validated (Instr0Op x))
         | isLabel x = 0
         | otherwise = 1
-numberOfBytes (Validated (Instr1Op _ _)) = 2
+numberOfBytes (Validated (Instr1Op x _)) 
+        | x == "DB" = 1
+        | otherwise = 2
 numberOfBytes (Validated (Instr2Op _ _ _)) = 3
 
 getValidatedInstructions words = reverse $ map validateInstr
@@ -144,9 +165,21 @@ getInstructions instructions (word1 : word2 : word3 : words)
 toUpperString :: [Char] -> [Char]
 toUpperString s = map toUpper s
 
-ramToString (RAMMacro addr val) = "ram[" ++ (show addr) ++ "]=" ++ val ++ ";"
+instrToRam (InstrAddr (Validated (Instr0Op x)) a) = [RAMMacro a x]
+instrToRam (InstrAddr (Validated (Instr1Op x o1)) a)
+    | x == "NOT" || x == "NEG" = [RAMMacro a x, RAMMacro (a + 1) o1]
+    | x == "DB" = [RAMMacro a o1]
+    | otherwise = [RAMMacro a x, RAMValue (a + 1) (read o1::Int)]
+instrToRam (InstrAddr (Validated (Instr2Op x o1 o2)) a)
+    | x == "LOAD" = [RAMMacro a x, RAMMacro (a + 1) o1,
+                     RAMValue (a + 2) (read o2::Int)]
+    | x == "STORE" = [RAMMacro a x, RAMValue (a + 1) (read o1::Int),
+                      RAMMacro (a + 2) o2]
+    | otherwise = [RAMMacro a x, RAMMacro (a + 1) o1, RAMMacro (a + 2) o2]
+
+ramToString (RAMMacro addr val) = "ram[" ++ (show addr) ++ "]=`" ++ val ++ ";\n"
 ramToString (RAMValue addr val) = "ram[" ++ (show addr) ++ "]=" ++
-                                   (show val)  ++ ";"
+                                   (show val)  ++ ";\n"
 
 {-
 main = do
